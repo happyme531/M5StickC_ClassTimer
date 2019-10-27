@@ -4,6 +4,7 @@
 #include "hardware.h"
 #include "timeutil.h"
 #include "ui.h"
+#include "noisedetection.h"
 UIClass ui;
 
 keyStatus_t mainKeyStatus;
@@ -17,16 +18,16 @@ uint8_t curScreenBrightness = 11;
 void setup() {
   initHardWare();
   ui.setPage(0);
-
+enableNoiseDetection();
   //校准时间
   textOut("Hold the main key to calibrate time..", 0, 0, 1, RED);
   delay(500);
   getKey(KEY_MAIN, &mainKeyStatus);
   if (mainKeyStatus.keyPressed) {
     struct tm time = getNTPTime();
-    time.tm_min -= 1;
-    time.tm_sec += 6;
+    if(time.tm_hour!=0){   //没有网络时调用获得的这个值是0
     RTCSetTime(time);
+    };
   };
   screenOnTime = millis();
 };
@@ -70,7 +71,7 @@ void loop() {
       curScreenBrightness = 11;
     };
   };
-  if (getTotalAcceleration() > 14) {
+  if (getTotalAcceleration() > 17) {
     screenOnTime = millis();
   };
 

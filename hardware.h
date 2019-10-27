@@ -7,6 +7,8 @@
 #include <inttypes.h>
 #include <string>
 #include <time.h>
+#include <Wire.h>
+#include "SparkFunHTU21D.h"
 using namespace std;
 
 extern ESP32_IRrecv ir;
@@ -30,6 +32,12 @@ void initHardWare();
 
 void powerOff();
 
+void enableMic();
+void disableMic();
+
+float getIMUTemp();
+float getPMUTemp();
+
 /*
  * 显示一串字符
  */
@@ -47,7 +55,6 @@ void textOut(string str, uint8_t x, uint8_t y, uint8_t size_, uint32_t color);
   BC_DATUM = Bottom centre
   BR_DATUM = Bottom right
 */
-
 void textOutAligned(string str, uint8_t x, uint8_t y, uint8_t size_,
                     uint32_t color, uint8_t alignment);
 

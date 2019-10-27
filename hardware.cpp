@@ -7,14 +7,26 @@ void initHardWare() {
   M5.begin();
 
   WiFi.mode(WIFI_OFF); //关闭WiFi
-  Wire1.beginTransmission(0x34);
-  Wire1.write(0x90);
-  Wire1.write(0x06); //关闭麦克风电源
-  Wire1.endTransmission();
-
+  
+  disableMic();
   M5.Lcd.setRotation(1);
   M5.Axp.ScreenBreath(11);
   M5.IMU.Init();
+};
+
+void enableMic(){
+   Wire1.beginTransmission(0x34);
+    Wire1.write(0x90);
+    Wire1.write(0x02); //gpio0 setting
+    Wire1.endTransmission();
+
+};
+
+void disableMic(){
+Wire1.beginTransmission(0x34);
+  Wire1.write(0x90);
+  Wire1.write(0x06); //关闭麦克风电源
+  Wire1.endTransmission();
 };
 
 void powerOff() {
@@ -24,6 +36,16 @@ void powerOff() {
   Wire1.write(0x32);
   Wire1.write(buf | 0x80); //关机
   Wire1.endTransmission();
+};
+
+float getPMUTemp(){
+  return -144.7 + M5.Axp.GetTempData() * 0.1;
+};
+float getIMUTemp(){
+  float temp=0;
+  M5.IMU.getTempData(&temp);
+  return temp;
+
 };
 
 void textOut(string str, uint8_t x, uint8_t y, uint8_t size_, uint32_t color) {
@@ -62,6 +84,22 @@ struct tm RTCGetTime() {
   return time;
 };
 
+/* 
+struct tm RTCGetTime() {
+  struct tm time;
+  RTC_TimeTypeDef Rtime;
+  RTC_DateTypeDef Rdate; //这个date中的year是实际年份
+  M5.Rtc.GetTime(&Rtime);
+  M5.Rtc.GetData(&Rdate); //怀疑应该是GetDate
+  time.tm_sec = 10;
+  time.tm_min = 10;
+  time.tm_hour = 10;
+  time.tm_mday = Rdate.Date;
+  time.tm_mon = Rdate.Month;
+  time.tm_year = Rdate.Year - 1900; // struct tm里的year是实际年份减去1900 (坑)
+  time.tm_wday = Rdate.WeekDay;
+  return time;
+}; */
 void RTCSetTime(struct tm time) {
   RTC_TimeTypeDef Rtime;
   RTC_DateTypeDef Rdate;
