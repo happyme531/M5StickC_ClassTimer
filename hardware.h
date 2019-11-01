@@ -8,6 +8,7 @@
 #include <string>
 #include <time.h>
 #include <Wire.h>
+#include "esp_pm.h"
 #include "SparkFunHTU21D.h"
 using namespace std;
 
@@ -31,7 +32,7 @@ extern keyStatus_t pwrKeyStatus;
 void initHardWare();
 
 void powerOff();
-
+     
 void enableMic();
 void disableMic();
 

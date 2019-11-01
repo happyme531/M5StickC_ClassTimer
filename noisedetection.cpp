@@ -59,6 +59,7 @@ double getNoiseVal()
         }
         return (maxsample - minsample);
     }
+    return 0;
 }
 
 void disableNoisedetection()
