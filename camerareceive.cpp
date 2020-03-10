@@ -5,6 +5,7 @@
 #include "HTTPClient.h"
 #include "M5StickC.h"
 #include "WiFi.h"
+#include <cinttypes>
 #include "rom/tjpgd.h"
 
 #define jpgColor(c) (((uint16_t)(((uint8_t*)(c))[0] & 0xF8) << 8) | ((uint16_t)(((uint8_t*)(c))[1] & 0xFC) << 3) | ((((uint8_t*)(c))[2] & 0xF8) >> 3))

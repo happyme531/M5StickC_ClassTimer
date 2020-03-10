@@ -1,6 +1,6 @@
 #ifndef UI_H
 #define UI_H
-#include <inttypes.h>
+#include <cinttypes>
 class UIClass {
 
 public:

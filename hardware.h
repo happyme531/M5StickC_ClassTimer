@@ -20,6 +20,7 @@ enum keyIndex_t { KEY_MAIN, KEY_SUB, KEY_POWER };
 
 typedef struct keyStatus {
   uint32_t keyPressms; //按键开始被按下的时间
+  uint32_t keyReleasems; //按键放开的时间
   keyEvent_t keyEvent;
   bool keyPressed;
   bool keyPressedPrev;
@@ -42,8 +43,8 @@ float getPMUTemp();
 /*
  * 显示一串字符
  */
-void textOut(string str, uint8_t x, uint8_t y, uint8_t size_, uint32_t color);
-
+void textOut(string str, int16_t x=-1, int16_t y=-1, int8_t size_=-1, uint32_t color=0xffffff,uint32_t bgColor=0x00000);
+void textOutZh(char* str, int16_t x=-1, int16_t y=-1, int8_t size_=-1, uint32_t color=0xffffff,uint32_t bgColor=0x00000);
 /*
   对齐方式:
   TL_DATUM = Top left

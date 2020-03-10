@@ -3,12 +3,9 @@
 #include <WiFi.h>
 #include <ctime>
 
-WiFiUDP udp;
-EasyNTPClient ntpClient(udp, "ntp.ntsc.ac.cn", (8 * 60 * 60));
-
 const char *wifiSSID_ = "bu~zhun~ceng~wang(2.4G)";
 const char *wifiPassword_ = "zlq13834653953";
-
+char* eventName[]={str_classReady,str_classOver,str_classBegin,str_lateForSchool,str_xieZuRequire};
 struct tm getNTPTime() {
   if (WiFi.getMode() == WIFI_OFF) {
     //不要用ESP_LOGx,貌似是坏掉的
@@ -20,7 +17,6 @@ struct tm getNTPTime() {
   delay(1300);
   keyStatus_t exitKey;
   exitKey.keyPressed = false;
-  time_t utime;
   struct tm time;
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -30,12 +26,12 @@ struct tm getNTPTime() {
     delay(50);
   };
 
-  utime = ntpClient.getUnixTime();
-  time = *localtime(&utime);
+  configTime(8 * 60 * 60, 0, "ntp.ntsc.ac.cn");
 end:
   textOut((string) "NTP end", 0, 10, 1, 0xffffff);
   WiFi.disconnect(true);
   WiFi.mode(WIFI_OFF);
+  getLocalTime(&time);
   return time;
 };
 

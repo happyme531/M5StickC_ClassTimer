@@ -2,8 +2,8 @@
 #define TIMEUTIL_H
 #include <Arduino.h>                          //没有这行,编译时String会报错
 #include <string>                              //没有这行,编译时string会报错
-#include <WiFiUdp.h>
-#include <EasyNTPClient.h>
+#include "time.h"
+#include "lang_zh.h"
 
 enum class_t {Chinese, Math, English, Physics, Chemistery, Biology, PE, SelfStudy, Unknown};
 //课程的显示名字
@@ -11,7 +11,7 @@ const String className[] = {"Chi", "Mat", "Eng", "Phy", "Chem", "Bio", "PE", "st
 
 enum classEvent_t {CLASS_READY,CLASS_END,CLASS_BEGIN,LATE_BEGIN,XIEZU_UNSAFE};
 //下一个事件的类型:准备上课,下课,上课,迟到,斜足危险(雾)
-const std::string eventName[]={"Class ready","Class over","Class begin","Late for school","Xiezu require"};
+extern char* eventName[];
 
 const class_t classtable[6][11] = //课程表
 {{English, English, Physics, Chemistery, Chemistery, Math, Math, SelfStudy, SelfStudy, SelfStudy, Chinese}, \

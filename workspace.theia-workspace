@@ -1,0 +1,24 @@
+{
+   "folders": [
+      {
+         "path": ""
+      }
+   ],
+   "settings": {
+      "cpp.buildConfigurations": [
+         {
+            "name": "",
+            "directory": ""
+         },
+         {
+            "name": "",
+            "directory": ""
+         },
+         {
+            "name": "",
+            "directory": ""
+         }
+      ],
+      "cpp.clangTidy": true
+   }
+}
