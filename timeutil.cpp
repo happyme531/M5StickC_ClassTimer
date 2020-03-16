@@ -6,6 +6,10 @@
 const char *wifiSSID_ = "bu~zhun~ceng~wang(2.4G)";
 const char *wifiPassword_ = "zlq13834653953";
 char* eventName[]={str_classReady,str_classOver,str_classBegin,str_lateForSchool,str_xieZuRequire};
+char* className[] = {str_chinese, str_math,       str_english,
+                     str_physics, str_chemistery, str_biology,
+                     str_PE,      str_selfStudy,  str_unknown};
+
 struct tm getNTPTime() {
   if (WiFi.getMode() == WIFI_OFF) {
     //不要用ESP_LOGx,貌似是坏掉的
@@ -56,11 +60,9 @@ struct tm hmsDiff(struct tm time1, struct tm time2) {
   return todaySec2tm(sec1 < sec2 ? sec2 - sec1 : sec1 - sec2);
 };
 
-uint8_t getNextClassNum(struct tm timeNow) {
-
+uint8_t getNextEventNum(struct tm timeNow) {
   uint32_t timeNowSec = tm2todaySec(timeNow);
   int i = 0;
-  for (i = 0; timeNowSec > classTime[i]; i++)
-    ;
+  for (i = 0; timeNowSec > classTime[i]; i++);
   return i;
 };

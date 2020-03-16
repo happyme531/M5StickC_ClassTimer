@@ -36,21 +36,32 @@ void UIClass::refresh() {
     char buf[30];
     strftime(buf, sizeof(buf), "%g/%m/%d %H:%M:%S", &time);  //打印当前时间
     tempStr = buf;
-    textOutZh(str_now, 0, 0, 1, 0xffffff);
+    textOutGB(str_now, 0, 0, 1, 0xffffff);
     textOut(tempStr);
-    uint8_t classNum = getNextClassNum(time);
-    if (classNum < getArrayLength(classTime)) {
-      time = hmsDiff(todaySec2tm(classTime[classNum]),
+
+    //课程倒计时部分
+    uint8_t eventNum = getNextEventNum(time);
+    if (eventNum < getArrayLength(classTime)) {
+      time = hmsDiff(todaySec2tm(classTime[eventNum]),
                      time);  //计算当前时间与下一节课时间的差值
       strftime(buf, sizeof(buf), "%H:%M:%S", &time);
       tempStr = buf;
-      textOutZh(str_nextEvent, 0, 15, 1, YELLOW);
+      textOutGB(str_nextEvent, 0, 15, 1, YELLOW);
       textOut(tempStr);  //打印距离下个事件的时间
-      textOutZh(str_type, 0, 30, 1, YELLOW);
-      textOutZh(eventName[classEventType[classNum]], -1, -1, -1, YELLOW);
+      textOutGB(str_type, 0, 30, 1, YELLOW);
+      textOutGB(eventName[classEventType[eventNum]], -1, -1, -1, YELLOW);
+
+      //下节课程显示部分
+      uint8_t classNum = 0;  //今天已完成课程的数量
+      for (int i = 0; i < eventNum; i++) {
+        if (classEventType[i] == CLASS_BEGIN) classNum++;
+      };
+      textOutGB(str_nextClass, 0, 45);
+      textOutGB(":");
+      textOutGB(className[classTable[time.tm_wday][classNum]]);
 
     } else {
-      textOutZh(str_noClassLeft, 0, 15, 1, GREEN);
+      textOutGB(str_noClassLeft, 0, 15, 1, GREEN);
     };
 
     if (time.tm_min < 1) {  //距离下一个下课事件1分钟内时允许进行校准
@@ -60,7 +71,7 @@ void UIClass::refresh() {
         //查找下一个事件对应的时间设为系统时间
         //其实这个方法不够全面，因为只有在系统时间较慢时才有效
         //不过这个手表的时间一直比学校时间慢，所以用起来也没问题
-        time = todaySec2tm(classTime[classNum]);
+        time = todaySec2tm(classTime[eventNum]);
 
         timeNow.tm_sec = time.tm_sec;
         timeNow.tm_min = time.tm_min;
@@ -68,17 +79,15 @@ void UIClass::refresh() {
         RTCSetTime(timeNow);
       };
     };
-    textOutZh(str_temperature, 0, 45, 1, WHITE);
-    textOut((": I:" + String(getIMUTemp()) + " P:" + String(getPMUTemp()) + "")
-                .c_str());
+
     float vbat = M5.Axp.GetBatVoltage();
-    uint8_t current = M5.Axp.GetBatCurrent();
+    int16_t current = M5.Axp.GetBatCurrent();
     if (current > 0) {  //放电状态
-      textOutZh(str_battery, 0, 65, 1, GREEN);
+      textOutGB(str_battery, 0, 65, 1, GREEN);
       textOut((":" + String(vbat) + "V," + String(current) + "mA").c_str(), -1,
               -1, -1, GREEN);
     } else {
-      textOutZh(str_battery, 0, 65, 1, RED);
+      textOutGB(str_battery, 0, 65, 1, RED);
       textOut((":" + String(vbat) + "V," + String(current) + "mA").c_str(), -1,
               -1, -1, RED);
     };
@@ -116,9 +125,9 @@ void UIClass::refresh() {
     strftime(buf, sizeof(buf), "%H:%M:%S", &time);  //打印当前时间
     tempStr = buf;
     textOut(tempStr, 0, 0, 2, 0xffffff);
-    uint8_t classNum = getNextClassNum(time);
-    if (classNum < getArrayLength(classTime)) {
-      time = hmsDiff(todaySec2tm(classTime[classNum]),
+    uint8_t eventNum = getNextEventNum(time);
+    if (eventNum < getArrayLength(classTime)) {
+      time = hmsDiff(todaySec2tm(classTime[eventNum]),
                      time);  //计算当前时间与下一节课时间的差值
       strftime(buf, sizeof(buf), "%H:%M:%S", &time);
       tempStr = buf;
@@ -129,42 +138,26 @@ void UIClass::refresh() {
     // M5.Lcd.fillScreen(M5.Lcd.color565(0, 0, 255));
   } else if (page == 3) {  //第四页:噪音检测
     if (pageNeedInit) {
+      enableNoiseDetection();
       this->refreshInterval = 40;
       i2sInit();
       pageNeedInit = 0;
     };
     page_fft();
 
-  } else if (page == 4) {  //第五页:htu21d 温度传感器
+  } else if (page == 4) {  //第五页:传感器数据
     if (pageNeedInit) {
-      this->refreshInterval = 500;
+      this->refreshInterval = 300;
+      pinMode(36, INPUT);  // 36是个gpi口，只能用来输入
       pageNeedInit = 0;
     };
-    if (pageNeedInit) {
-      Wire.begin(36, 26, 100000);
-      htu21d.begin(Wire);
-      Wire.beginTransmission(0x40);
-      if (Wire.endTransmission() == 0) {  //表明设备已连接
-        initSucceed = 1;
-      } else {
-        initSucceed = 0;
-      };
+    M5.Lcd.fillScreen(TFT_BLACK);
+    uint16_t adcVal = analogRead(36);
+    textOut(("ADC:" + String(adcVal) + "->" +
+             String((float)(3.3 * adcVal / 4096)) + "V")
+                .c_str(),
+            3, 0, -1);
 
-      pageNeedInit = 0;
-    };
-    M5.Lcd.fillScreen(BLACK);
-    if (initSucceed) {
-      textOut("HTU21D init OK", 0, 0, 1, GREEN);
-      String tempStr;
-
-      tempStr = "Temp:" + String(htu21d.readTemperature());
-      textOut(tempStr.c_str(), 0, 20, 1, WHITE);
-      tempStr = "Humi:" + String(htu21d.readHumidity());
-      textOut(tempStr.c_str(), 0, 40, 1, WHITE);
-
-    } else {
-      textOut("HTU21D init ERROR", 0, 0, 1, GREEN);
-    };
   } else if (page == 5) {  //第六页:老虎机小游戏
 
     enum SlotsState {
@@ -282,17 +275,16 @@ void UIClass::refresh() {
     M5.Lcd.setCursor(0, 0);
     M5.Lcd.printf("FPS:%d", fps);
     //显示电池状态
-    uint16_t vbat = M5.Axp.GetVbatData() * 1.1;
-    uint8_t current = M5.Axp.GetIdischargeData() / 2;
+    float vbat = M5.Axp.GetBatVoltage();
+    int16_t current = M5.Axp.GetBatCurrent();
     if (current > 0) {  //放电状态
-      textOut(("Vbat:" + String(vbat) + "mV,Bcur:" + String(current) + "mA")
-                  .c_str(),
-              0, 65, 1, GREEN);
+      textOutGB(str_battery, 0, 65, 1, GREEN);
+      textOut((":" + String(vbat) + "V," + String(current) + "mA").c_str(), -1,
+              -1, -1, GREEN);
     } else {
-      current = M5.Axp.GetIchargeData() / 2;
-      textOut(("Vbat:" + String(vbat) + "mV,Bcur:" + String(current) + "mA")
-                  .c_str(),
-              0, 65, 1, RED);
+      textOutGB(str_battery, 0, 65, 1, RED);
+      textOut((":" + String(vbat) + "V," + String(current) + "mA").c_str(), -1,
+              -1, -1, RED);
     };
   };
   return;

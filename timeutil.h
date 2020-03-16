@@ -5,15 +5,15 @@
 #include "time.h"
 #include "lang_zh.h"
 
-enum class_t {Chinese, Math, English, Physics, Chemistery, Biology, PE, SelfStudy, Unknown};
+enum class_t {Chinese = 0, Math, English, Physics, Chemistery, Biology, PE, SelfStudy, Unknown};
 //课程的显示名字
-const String className[] = {"Chi", "Mat", "Eng", "Phy", "Chem", "Bio", "PE", "stu", "nul"}; 
+extern  char* className[];
 
 enum classEvent_t {CLASS_READY,CLASS_END,CLASS_BEGIN,LATE_BEGIN,XIEZU_UNSAFE};
 //下一个事件的类型:准备上课,下课,上课,迟到,斜足危险(雾)
 extern char* eventName[];
 
-const class_t classtable[6][11] = //课程表
+const class_t classTable[6][11] = //课程表
 {{English, English, Physics, Chemistery, Chemistery, Math, Math, SelfStudy, SelfStudy, SelfStudy, Chinese}, \
   {Math, Math, Chemistery, Biology, Biology, Chinese, Chinese, Physics, SelfStudy, SelfStudy, Physics}, \
   {Physics, Physics, Chinese, Chinese, PE, English, English, Math, Biology, SelfStudy, Math}, \
@@ -66,6 +66,6 @@ struct tm todaySec2tm(uint32_t sec);
  */
 struct tm hmsDiff(struct tm time1,struct tm time2);
 
-uint8_t getNextClassNum(struct tm timeNow);
+uint8_t getNextEventNum(struct tm timeNow);
 
 #endif

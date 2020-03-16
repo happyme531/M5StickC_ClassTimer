@@ -3,8 +3,12 @@
 ESP32_IRrecv ir;
 
 void initHardWare() {
+  Wire.begin(32, 33);  //避免选择的开发板不是M5stickC而造成的io引脚冲突
   M5.begin(true, false, true);  //初始化屏幕和串口，跳过电源管理
   M5.Axp.begin();  //初始化电源管理(先初始化屏幕以避免花屏)
+  M5.Axp.SetChargeCurrent(CURRENT_190MA);
+  pinMode(37, INPUT);
+  pinMode(39, INPUT);
   ESP_LOGI("init", "CPU freq is initially %d.", ESP.getCpuFreqMHz());
   esp_pm_config_esp32_t pwrCfg = {
       .max_cpu_freq = RTC_CPU_FREQ_XTAL,
@@ -20,17 +24,64 @@ void initHardWare() {
   };
 
   WiFi.mode(WIFI_OFF);  //关闭WiFi
-
   disableMic();
   M5.Lcd.setRotation(1);
   M5.Lcd.loadHzk16();
   M5.Axp.ScreenBreath(11);
   M5.IMU.Init();
+  if (M5.IMU.imuType == M5.IMU.IMU_MPU6886) {
+    ESP_LOGI("init", "IMU type is MPU6886");
+  } else {
+    ESP_LOGI("init", "IMU type is SH200Q");
+  };
+  // rtc
+  Wire1.beginTransmission(0x51);
+  Wire1.write(0x01);
+  Wire1.write(0x00);
+  Wire1.endTransmission();
+  delay(1);
+  // imu
+  Wire1.beginTransmission(0x68);
+  Wire1.write(0x37);
+  Wire1.write(0xd0);
+  Wire1.endTransmission();
+  delay(1);
+  Wire1.beginTransmission(0x68);
+  Wire1.write(0x38);
+  Wire1.write(0x00);
+  Wire1.endTransmission();
+  delay(1);
+  Wire1.beginTransmission(0x68);
+  Wire1.write(0x58);
+  Wire1.endTransmission();
+  Wire1.requestFrom(0x68, 1);
+  delay(1);
 
+  // pmu
+  uint32_t ReData = 0;
+  Wire1.beginTransmission(0x34);
+  Wire1.write(0x44);
+  Wire1.endTransmission();
+  Wire1.requestFrom(0x34, 4);
+  for (int i = 0; i < 4; i++) {
+    ReData <<= 8;
+    ReData |= Wire1.read();
+  }
+  ESP_LOGI("init", "AXP192 IRQ state:%x", ReData);
   Wire1.beginTransmission(0x34);
   Wire1.write(0x31);
   Wire1.write(0x07);  //关机电压:3.3v
+  //清除所有irq
+  Wire1.write(0x44);
+  Wire1.write(0xff);
+  Wire1.write(0x45);
+  Wire1.write(0xff);
+  Wire1.write(0x46);
+  Wire1.write(0xff);
+  Wire1.write(0x47);
+  Wire1.write(0xff);
   Wire1.endTransmission();
+  rtc_gpio_deinit(GPIO_NUM_35);
 };
 
 void enableMic() {
@@ -55,6 +106,13 @@ void powerOff() {
   Wire1.write(buf | 0x80);  //关机
   Wire1.endTransmission();
 };
+void deepSleep() {
+  M5.Axp.SetSleep();
+  Serial.println(
+      esp_sleep_enable_ext0_wakeup(GPIO_NUM_35, 0));  //中断引脚被拉低时唤醒
+  ESP_LOGI("hardware", "Start deep sleep");
+  esp_deep_sleep_start();
+}
 
 float getPMUTemp() { return M5.Axp.GetTempInAXP192(); };
 float getIMUTemp() {
@@ -63,19 +121,19 @@ float getIMUTemp() {
   return temp;
 };
 
-void textOut(string str, int16_t x , int16_t y , int8_t size_ ,
-             uint32_t color , uint32_t bgColor) {
-  M5.Lcd.setTextColor(color,bgColor);
+void textOut(string str, int16_t x, int16_t y, int8_t size_, uint32_t color,
+             uint32_t bgColor) {
+  M5.Lcd.setTextColor(color, bgColor);
   if (size_ != -1) M5.Lcd.setTextSize(size_);
   if (x != -1 && y != -1) M5.Lcd.setCursor(x, y, 2);  //默认第二个字体
-  M5.Lcd.printf(str.c_str());  //这个函数居然只能用const char*
+  M5.Lcd.print(str.c_str());  //这个函数居然只能用const char*
 };
 
-void textOutZh(char *str, int16_t x, int16_t y, int8_t size_,
-               uint32_t color,uint32_t bgColor) {  //这个函数用来输出中文
-  M5.Lcd.setTextColor(color,bgColor);
+void textOutGB(char *str, int16_t x, int16_t y, int8_t size_, uint32_t color,
+               uint32_t bgColor) {  //这个函数用来输出中文
+  M5.Lcd.setTextColor(color, bgColor);
   if (size_ != -1) M5.Lcd.setTextSize(size_);
-  if (x != -1 && y != -1) M5.Lcd.setCursor(x, y, 2); 
+  if (x != -1 && y != -1) M5.Lcd.setCursor(x, y, 2);
   M5.Lcd.writeHzk(str);
 }
 
@@ -164,6 +222,8 @@ void getKey(keyIndex_t keyIndex, keyStatus_t *keyStatus) {
           M5.Axp.GetBtnPress() == 1 ? true : false;  //暂时忽略 长按返回2
       break;
   };
-  if (!keyStatus->keyPressedPrev && keyStatus->keyPressed) keyStatus->keyPressms = millis();
-  if (keyStatus->keyPressedPrev && !keyStatus->keyPressed) keyStatus->keyReleasems = millis();
+  if (!keyStatus->keyPressedPrev && keyStatus->keyPressed)
+    keyStatus->keyPressms = millis();
+  if (keyStatus->keyPressedPrev && !keyStatus->keyPressed)
+    keyStatus->keyReleasems = millis();
 };

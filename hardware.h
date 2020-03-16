@@ -9,6 +9,8 @@
 #include <time.h>
 #include <Wire.h>
 #include "esp_pm.h"
+#include <rom/rtc.h>
+#include <driver/rtc_io.h>
 #include "SparkFunHTU21D.h"
 using namespace std;
 
@@ -33,6 +35,7 @@ extern keyStatus_t pwrKeyStatus;
 void initHardWare();
 
 void powerOff();
+void deepSleep();
      
 void enableMic();
 void disableMic();
@@ -44,7 +47,7 @@ float getPMUTemp();
  * 显示一串字符
  */
 void textOut(string str, int16_t x=-1, int16_t y=-1, int8_t size_=-1, uint32_t color=0xffffff,uint32_t bgColor=0x00000);
-void textOutZh(char* str, int16_t x=-1, int16_t y=-1, int8_t size_=-1, uint32_t color=0xffffff,uint32_t bgColor=0x00000);
+void textOutGB(char* str, int16_t x=-1, int16_t y=-1, int8_t size_=-1, uint32_t color=0xffffff,uint32_t bgColor=0x00000);
 /*
   对齐方式:
   TL_DATUM = Top left

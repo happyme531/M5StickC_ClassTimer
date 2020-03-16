@@ -11,26 +11,32 @@ keyStatus_t mainKeyStatus;
 keyStatus_t subKeyStatus;
 keyStatus_t pwrKeyStatus;
 
-uint32_t screenOnTime = 0; //屏幕开启的时间
+uint32_t screenOnTime = 0;  //上一次屏幕变量的时间
 uint32_t lastRefresh = 0;
+uint32_t powerOffCountDown = 0;  //自动关机倒计时,单位ms,0表示禁用
 uint8_t curScreenBrightness = 11;
 
 void setup() {
   initHardWare();
-  enableNoiseDetection();
+  uint8_t resetReason = rtc_get_reset_reason(0);
+  if (resetReason == 5) {
+    ESP_LOGI("init", "ESP32 reseted from deep sleep");
+    // if()
+  }
   //校准时间
   textOut("Hold the main key to calibrate time..", 0, 0, 1, RED);
   delay(500);
   getKey(KEY_MAIN, &mainKeyStatus);
   if (mainKeyStatus.keyPressed) {
     struct tm time = getNTPTime();
-    if (time.tm_hour != 0) { //没有网络时调用获得的这个值是0
+    if (time.tm_hour != 0) {  //没有网络时调用获得的这个值是0
       ESP_LOGI("main", "NTP succeed");
       RTCSetTime(time);
     } else {
       ESP_LOGW("main", "NTP failed");
     }
   };
+  // if()
   screenOnTime = millis();
   ui.setPage(0);
 };
@@ -56,10 +62,13 @@ void loop() {
   };
 
   if (pwrKeyStatus.keyPressed) {
-    powerOff();
+     powerOff();
+    //deepSleep();
   };
-  if (mainKeyStatus.keyPressed == 1 || M5.Axp.GetVinVoltage()>4.0) { //按下主按钮或正在充电
-    screenOnTime = millis();   //点亮屏幕
+
+  if (mainKeyStatus.keyPressed == 1 ||
+      M5.Axp.GetVinVoltage() > 4.0) {  //按下主按钮或正在充电
+    screenOnTime = millis();           //点亮屏幕
   };
 
   // 20秒之后让屏幕变暗
@@ -67,11 +76,13 @@ void loop() {
     if (curScreenBrightness != 8) {
       M5.Axp.ScreenBreath(8);
       curScreenBrightness = 8;
+      ESP_LOGV("main", "Screen dim");
     };
   } else {
     if (curScreenBrightness != 11) {
       M5.Axp.ScreenBreath(11);
       curScreenBrightness = 11;
+      ESP_LOGV("main", "Screen dim reset");
     };
   };
 
@@ -79,9 +90,15 @@ void loop() {
     screenOnTime = millis();
   };
 
+#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
+  ESP_LOGD("main", "Current ");
+#endif
+
+  ESP_LOGI("main","int pin: %d",digitalRead(35));
+
   if (ui.allowLightSleep) {
     esp_sleep_enable_timer_wakeup(ui.refreshInterval * 1000);
-    esp_light_sleep_start(); //刷新屏幕之后进入睡眠模式（确实能省不少电）
+    esp_light_sleep_start();  //刷新屏幕之后进入睡眠模式（确实能省不少电）
   } else {
     delay(ui.refreshInterval);
   };
