@@ -1,6 +1,6 @@
 {
     "board": "esp32:esp32:m5stick-c",
-    "configuration": "PartitionScheme=default,UploadSpeed=1500000,DebugLevel=info",
+    "configuration": "PartitionScheme=default,UploadSpeed=1500000,CPUFreq=240,DebugLevel=debug",
     "output": "./build",
     "port": "COM20",
     "sketch": "M5StickC_ClassTimer.ino"

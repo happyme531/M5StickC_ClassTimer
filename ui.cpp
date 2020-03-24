@@ -41,9 +41,8 @@ void UIClass::refresh() {
 
     //课程倒计时部分
     uint8_t eventNum = getNextEventNum(time);
-    if (eventNum < getArrayLength(classTime)) {
-      time = hmsDiff(todaySec2tm(classTime[eventNum]),
-                     time);  //计算当前时间与下一节课时间的差值
+    if (eventNum < classCount) {
+      time = hmsDiff(todaySec2tm(classTime[eventNum]),time);  //计算当前时间与下一节课时间的差值
       strftime(buf, sizeof(buf), "%H:%M:%S", &time);
       tempStr = buf;
       textOutGB(str_nextEvent, 0, 15, 1, YELLOW);
@@ -52,14 +51,18 @@ void UIClass::refresh() {
       textOutGB(eventName[classEventType[eventNum]], -1, -1, -1, YELLOW);
 
       //下节课程显示部分
+      /* 
       uint8_t classNum = 0;  //今天已完成课程的数量
       for (int i = 0; i < eventNum; i++) {
         if (classEventType[i] == CLASS_BEGIN) classNum++;
       };
-      textOutGB(str_nextClass, 0, 45);
-      textOutGB(":");
-      textOutGB(className[classTable[time.tm_wday][classNum]]);
-
+      ESP_LOGD("ui", "weekday %d,class %d", time.tm_wday, classNum);
+      if (classNum < getArrayLength(classTable[0])) {
+        textOutGB(str_nextClass, 0, 45);
+        textOutGB((char*)":");
+        textOutGB(className[classTable[time.tm_wday - 1][classNum]]);
+      };
+      */
     } else {
       textOutGB(str_noClassLeft, 0, 15, 1, GREEN);
     };
@@ -72,13 +75,23 @@ void UIClass::refresh() {
         //其实这个方法不够全面，因为只有在系统时间较慢时才有效
         //不过这个手表的时间一直比学校时间慢，所以用起来也没问题
         time = todaySec2tm(classTime[eventNum]);
-
         timeNow.tm_sec = time.tm_sec;
         timeNow.tm_min = time.tm_min;
         timeNow.tm_hour = time.tm_hour;
         RTCSetTime(timeNow);
       };
     };
+    //在按住按钮5秒后显示消息，并在按住8秒后锁定时间的秒为0
+    //可以用来调慢时间
+    //用于弥补上面对时机制的不足
+    if(millis()-mainKeyStatus.keyPressms>5000 && mainKeyStatus.keyPressed &&mainKeyStatus.keyPressedPrev){ 
+      textOut("Press 8sec to freeze second",0,45,1,RED);
+      if(millis()-mainKeyStatus.keyPressms>8000){
+        struct tm timeNow = RTCGetTime();
+        timeNow.tm_sec = 0;
+        RTCSetTime(timeNow);
+      };
+    }; 
 
     float vbat = M5.Axp.GetBatVoltage();
     int16_t current = M5.Axp.GetBatCurrent();
@@ -92,7 +105,54 @@ void UIClass::refresh() {
               -1, -1, RED);
     };
 
-  } else if (page == 2) {  //第三页:遥控器功能
+  } else if (page == 1) {  //第二页:大字显示时间
+    if (pageNeedInit) {
+      this->refreshInterval = 500;
+      pageNeedInit = 0;
+    };
+    M5.Lcd.fillScreen(BLACK);
+    string tempStr;
+    struct tm time;
+    time = RTCGetTime();
+    char buf[30];
+    strftime(buf, sizeof(buf), "%H:%M:%S", &time);  //打印当前时间
+    tempStr = buf;
+    textOut(tempStr, 0, 0, 2, 0xffffff);
+    uint8_t eventNum = getNextEventNum(time);
+    if (eventNum < classCount) {
+      time = hmsDiff(todaySec2tm(classTime[eventNum]),time);  //计算当前时间与下一节课时间的差值
+      strftime(buf, sizeof(buf), "%H:%M:%S", &time);
+      tempStr = buf;
+      textOut(tempStr, 0, 40, 2, YELLOW);  //打印距离下个事件的时间
+    } else {
+      textOut("------", 0, 40, 2, GREEN);
+    };
+    // M5.Lcd.fillScreen(M5.Lcd.color565(0, 0, 255));
+  } else if (page == 2) {  //第三页:农历与额外日期信息
+    if (pageNeedInit) {
+      this->refreshInterval = 1000;
+      pageNeedInit = 0;
+    };
+    struct tm time;
+    time = RTCGetTime();
+    int daysInMonth=0;
+    RTC_DateTypeDef lunarDate = getLunarDate(time,&daysInMonth);
+    M5.Lcd.setCursor(0,0);
+    M5.Lcd.setTextSize(1);
+    M5.Lcd.setTextColor(WHITE);
+    M5.Lcd.fillScreen(BLACK);
+    M5.Lcd.printf("lc: %d/%d/%d (%d)",lunarDate.Year,lunarDate.Month,lunarDate.Date,daysInMonth);
+    textOut("ref: ",0,15,1);
+    textOutGB(str_tianGans[yearTianGan(time.tm_year+1900)]);
+    textOutGB(str_diZhis[yearDiZhi(time.tm_year+1900)]);
+    textOutGB(str_tianGans[monthTianGan(time.tm_year+1900,time.tm_mon+1)]);
+    textOutGB(str_diZhis[monthDiZhi(time.tm_mon+1)]);
+    textOutGB(str_tianGans[dayTianGan(time.tm_year+1900,time.tm_mon+1,time.tm_mday)]);
+    textOutGB(str_diZhis[dayDiZhi(time.tm_year+1900,time.tm_mon+1,time.tm_mday)]);
+
+
+
+  } else if (page == 3) {  //第四页:遥控器功能
     if (pageNeedInit) {
       this->refreshInterval = 500;
       pageNeedInit = 0;
@@ -112,31 +172,7 @@ void UIClass::refresh() {
       delay(1000);
     };
 
-  } else if (page == 1) {  //第二页:大字显示时间
-    if (pageNeedInit) {
-      this->refreshInterval = 500;
-      pageNeedInit = 0;
-    };
-    M5.Lcd.fillScreen(BLACK);
-    string tempStr;
-    struct tm time;
-    time = RTCGetTime();
-    char buf[30];
-    strftime(buf, sizeof(buf), "%H:%M:%S", &time);  //打印当前时间
-    tempStr = buf;
-    textOut(tempStr, 0, 0, 2, 0xffffff);
-    uint8_t eventNum = getNextEventNum(time);
-    if (eventNum < getArrayLength(classTime)) {
-      time = hmsDiff(todaySec2tm(classTime[eventNum]),
-                     time);  //计算当前时间与下一节课时间的差值
-      strftime(buf, sizeof(buf), "%H:%M:%S", &time);
-      tempStr = buf;
-      textOut(tempStr, 0, 40, 2, YELLOW);  //打印距离下个事件的时间
-    } else {
-      textOut("------", 0, 40, 2, GREEN);
-    };
-    // M5.Lcd.fillScreen(M5.Lcd.color565(0, 0, 255));
-  } else if (page == 3) {  //第四页:噪音检测
+  } else if (page == 4) {  //第五页:噪音检测
     if (pageNeedInit) {
       enableNoiseDetection();
       this->refreshInterval = 40;
@@ -145,7 +181,7 @@ void UIClass::refresh() {
     };
     page_fft();
 
-  } else if (page == 4) {  //第五页:传感器数据
+  } else if (page == 5) {  //第六页:传感器数据
     if (pageNeedInit) {
       this->refreshInterval = 300;
       pinMode(36, INPUT);  // 36是个gpi口，只能用来输入
@@ -158,7 +194,7 @@ void UIClass::refresh() {
                 .c_str(),
             3, 0, -1);
 
-  } else if (page == 5) {  //第六页:老虎机小游戏
+  } else if (page == 6) {  //第七页:老虎机小游戏
 
     enum SlotsState {
       SLOTS_INIT,
@@ -238,7 +274,7 @@ void UIClass::refresh() {
         slots[i].draw();
       }
     }
-  } else if (page == 6) {
+  } else if (page == 7) {
     if (pageNeedInit) {
       M5.Lcd.fillScreen(BLACK);
       textOutAligned("Wifi camera receiver", 80, 0, 1, WHITE, TC_DATUM);

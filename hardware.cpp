@@ -129,12 +129,12 @@ void textOut(string str, int16_t x, int16_t y, int8_t size_, uint32_t color,
   M5.Lcd.print(str.c_str());  //这个函数居然只能用const char*
 };
 
-void textOutGB(char *str, int16_t x, int16_t y, int8_t size_, uint32_t color,
+void textOutGB(const char *str, int16_t x, int16_t y, int8_t size_, uint32_t color,
                uint32_t bgColor) {  //这个函数用来输出中文
   M5.Lcd.setTextColor(color, bgColor);
   if (size_ != -1) M5.Lcd.setTextSize(size_);
   if (x != -1 && y != -1) M5.Lcd.setCursor(x, y, 2);
-  M5.Lcd.writeHzk(str);
+  M5.Lcd.writeHzk(const_cast<char*>(str));
 }
 
 void rect(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint32_t color) {
@@ -162,7 +162,7 @@ struct tm RTCGetTime() {
   time.tm_mday = Rdate.Date;
   time.tm_mon = Rdate.Month;
   time.tm_year = Rdate.Year - 1900;  // struct tm里的year是实际年份减去1900 (坑)
-  time.tm_wday = Rdate.WeekDay;
+  time.tm_wday = Rdate.WeekDay; //周一=1,周日=7..
   return time;
 };
 

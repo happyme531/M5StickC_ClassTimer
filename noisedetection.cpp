@@ -39,9 +39,11 @@ void enableNoiseDetection()
 double getNoiseVal()
 {
     int32_t samples[BLOCK_SIZE];
-    int num_bytes_read = i2s_read_bytes(I2S_PORT,
+    int num_bytes_read;
+    i2s_read(I2S_PORT,
         (char*)samples,
         BLOCK_SIZE, // the doc says bytes, but its elements.
+        (size_t*)&num_bytes_read,
         portMAX_DELAY); // no timeout
     int samples_read = num_bytes_read / 8;
     if (samples_read > 0) {

@@ -66,8 +66,11 @@ void fft_check_init() {
 
 void page_fft() {
 
-  int bytes = i2s_read_bytes(I2S_NUM_0, (char *)BUFFER, READ_LEN,
+  int bytes;
+   i2s_read(I2S_NUM_0, (char *)BUFFER, READ_LEN,(size_t*)&bytes,
                              (100 / portTICK_RATE_MS));
+
+                             
   for (uint16_t i = 0; i < SAMPLES; i++) {
     vReal[i] = adcBuffer[i];
     /* Build data with positive and negative values */

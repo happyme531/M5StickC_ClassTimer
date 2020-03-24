@@ -12,7 +12,7 @@ public:
     void setPage(uint8_t page_);
 
     void refresh();
-    const uint8_t maxPage = 6;
+    const uint8_t maxPage = 7;
 
 private:
     const uint16_t refreshIntervals[6] = { 500, 500, 500, 100,500,20 }; //刷新间隔(毫秒)

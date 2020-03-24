@@ -7,6 +7,10 @@
 #include "ui.h"
 UIClass ui;
 
+uint32_t classTime[50]; 
+classEvent_t classEventType[50];
+uint8_t classCount;
+
 keyStatus_t mainKeyStatus;
 keyStatus_t subKeyStatus;
 keyStatus_t pwrKeyStatus;
@@ -21,7 +25,6 @@ void setup() {
   uint8_t resetReason = rtc_get_reset_reason(0);
   if (resetReason == 5) {
     ESP_LOGI("init", "ESP32 reseted from deep sleep");
-    // if()
   }
   //校准时间
   textOut("Hold the main key to calibrate time..", 0, 0, 1, RED);
@@ -36,7 +39,21 @@ void setup() {
       ESP_LOGW("main", "NTP failed");
     }
   };
-  // if()
+  struct tm time = RTCGetTime();
+  if(time.tm_wday<=5){
+    memcpy(classTime,classTime_1_5,sizeof(classTime_1_5));
+    memcpy(classEventType,classEventType_1_5,sizeof(classEventType_1_5));
+    ESP_LOGI("init","Event count is %d and %d",getArrayLength(classTime_1_5),getArrayLength(classEventType_1_5));
+    classCount=getArrayLength(classTime_1_5);
+  }else if (time.tm_wday == 6){
+    memcpy(classTime,classTime_6,sizeof(classTime_6));
+    memcpy(classEventType,classEventType_6,sizeof(classEventType_6));
+    classCount=getArrayLength(classTime_6);
+  }else{
+    memcpy(classTime,classTime_7,sizeof(classTime_7));
+    memcpy(classEventType,classEventType_7,sizeof(classEventType_7));
+    classCount=getArrayLength(classTime_7);  
+  };
   screenOnTime = millis();
   ui.setPage(0);
 };
@@ -90,9 +107,6 @@ void loop() {
     screenOnTime = millis();
   };
 
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_DEBUG
-  ESP_LOGD("main", "Current ");
-#endif
 
   ESP_LOGI("main","int pin: %d",digitalRead(35));
 
