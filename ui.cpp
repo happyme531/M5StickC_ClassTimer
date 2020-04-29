@@ -151,7 +151,6 @@ void UIClass::refresh() {
     textOutGB(str_diZhis[dayDiZhi(time.tm_year+1900,time.tm_mon+1,time.tm_mday)]);
 
 
-
   } else if (page == 3) {  //第四页:遥控器功能
     if (pageNeedInit) {
       this->refreshInterval = 500;
@@ -183,16 +182,35 @@ void UIClass::refresh() {
 
   } else if (page == 5) {  //第六页:传感器数据
     if (pageNeedInit) {
-      this->refreshInterval = 300;
+      this->refreshInterval = 400;
       pinMode(36, INPUT);  // 36是个gpi口，只能用来输入
+
+      Wire.begin(0, 26); //同上，不能用gpio36来进行i2c通讯
+      htu21d.begin(Wire);
+      Wire.beginTransmission(0x40);
+      if (Wire.endTransmission() == 0) {  //表明设备已连接
+        initSucceed = 1;
+      } else {
+        initSucceed = 0;
+      };
+
       pageNeedInit = 0;
     };
     M5.Lcd.fillScreen(TFT_BLACK);
     uint16_t adcVal = analogRead(36);
-    textOut(("ADC:" + String(adcVal) + "->" +
-             String((float)(3.3 * adcVal / 4096)) + "V")
-                .c_str(),
-            3, 0, -1);
+    textOut(("ADC:" + String(adcVal) + "->" + String((float)(3.3 * adcVal / 4096)) + "V").c_str(),3, 0, -1);
+
+    if (initSucceed) {
+      textOut("HTU21D init OK", 0, 20, 1, GREEN);
+      String tempStr;
+      tempStr = "Temp:" + String(htu21d.readTemperature());
+      textOut(tempStr.c_str(), 0, 40, 1, WHITE);
+      tempStr = "Humi:" + String(htu21d.readHumidity());
+      textOut(tempStr.c_str(), 0, 60, 1, WHITE);
+
+    } else {
+      textOut("HTU21D init ERROR", 20, 0, 1, GREEN);
+    };
 
   } else if (page == 6) {  //第七页:老虎机小游戏
 
