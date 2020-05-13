@@ -2,6 +2,10 @@
     "files.associations": {
         "cmath": "cpp",
         "istream": "cpp",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "*.tcc": "c",
+        "unordered_map": "c",
+        "fstream": "c",
+        "sstream": "c"
     }
 }

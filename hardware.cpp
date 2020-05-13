@@ -1,27 +1,22 @@
 #include "hardware.h"
 
 ESP32_IRrecv ir;
+TFT_eSprite dispBuf = TFT_eSprite(&M5.Lcd);
 
 void initHardWare() {
+  pinMode(10,OUTPUT);
+  digitalWrite(10,HIGH);
+  delay(50);
+  digitalWrite(10,LOW);//红色led
   Wire.begin(32, 33);  //避免选择的开发板不是M5stickC而造成的io引脚冲突
   M5.begin(true, false, true);  //初始化屏幕和串口，跳过电源管理
   M5.Axp.begin();  //初始化电源管理(先初始化屏幕以避免花屏)
   M5.Axp.SetChargeCurrent(CURRENT_190MA);
+  M5.Lcd.setSwapBytes(false);
+  dispBuf.createSprite(160, 80);
+  dispBuf.setSwapBytes(true);
   pinMode(37, INPUT);
   pinMode(39, INPUT);
-  ESP_LOGI("init", "CPU freq is initially %d.", ESP.getCpuFreqMHz());
-  esp_pm_config_esp32_t pwrCfg = {
-      .max_cpu_freq = RTC_CPU_FREQ_XTAL,
-      .max_freq_mhz = 80,
-      .min_cpu_freq = RTC_CPU_FREQ_XTAL,
-      .min_freq_mhz = 0,
-      .light_sleep_enable = true,
-  };
-  if (esp_pm_configure(&pwrCfg) == ESP_ERR_NOT_SUPPORTED) {
-    ESP_LOGW("init", "Failed to change freq.");
-  } else {
-    ESP_LOGI("init", "CPU freq is now %d.", ESP.getCpuFreqMHz());
-  };
 
   WiFi.mode(WIFI_OFF);  //关闭WiFi
   disableMic();
@@ -82,6 +77,10 @@ void initHardWare() {
   Wire1.write(0xff);
   Wire1.endTransmission();
   rtc_gpio_deinit(GPIO_NUM_35);
+
+  setCpuFrequencyMhz(80);
+  ESP_LOGI("init", "CPU freq is now %d.", ESP.getCpuFreqMHz());
+  digitalWrite(10,HIGH);
 };
 
 void enableMic() {

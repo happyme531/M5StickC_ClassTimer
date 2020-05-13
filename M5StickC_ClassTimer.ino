@@ -40,6 +40,10 @@ void setup() {
     }
   };
   struct tm time = RTCGetTime();
+  char buf[30];
+  strftime(buf, sizeof(buf), "%Y/%m/%d %H:%M:%S", &time); 
+  ESP_LOGI("main","Local time:%s",buf);
+
   if(time.tm_wday<=5){
     memcpy(classTime,classTime_1_5,sizeof(classTime_1_5));
     memcpy(classEventType,classEventType_1_5,sizeof(classEventType_1_5));
@@ -63,6 +67,7 @@ void loop() {
   getKey(KEY_MAIN, &mainKeyStatus);
   getKey(KEY_SUB, &subKeyStatus);
   getKey(KEY_POWER, &pwrKeyStatus);
+ 
 
   //切换页面
   if (subKeyStatus.keyPressed == 1 && subKeyStatus.keyPressedPrev == 0) {
@@ -83,8 +88,7 @@ void loop() {
     //deepSleep();
   };
 
-  if (mainKeyStatus.keyPressed == 1 ||
-      M5.Axp.GetVinVoltage() > 4.0) {  //按下主按钮或正在充电
+  if (mainKeyStatus.keyPressed == 1 || M5.Axp.GetVinVoltage() > 4.0) {  //按下主按钮或正在充电
     screenOnTime = millis();           //点亮屏幕
   };
 

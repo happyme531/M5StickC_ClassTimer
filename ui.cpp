@@ -173,15 +173,24 @@ void UIClass::refresh() {
 
   } else if (page == 4) {  //第五页:噪音检测
     if (pageNeedInit) {
-      enableNoiseDetection();
-      this->refreshInterval = 40;
-      i2sInit();
+      enableMic();
+      micFFTInit();
+      setCpuFrequencyMhz(320);
+      this->refreshInterval = 8;
+      this->allowLightSleep = 0;
       pageNeedInit = 0;
     };
-    page_fft();
-
+    for (int i = 0; i < 15; i++) {
+      micFFTRun();
+      delay(10);
+    };
+    screenOnTime = millis();
   } else if (page == 5) {  //第六页:传感器数据
     if (pageNeedInit) {
+      micFFTDeinit();
+      disableMic();
+      setCpuFrequencyMhz(80);
+      this->allowLightSleep = 1;
       this->refreshInterval = 400;
       pinMode(36, INPUT);  // 36是个gpi口，只能用来输入
 

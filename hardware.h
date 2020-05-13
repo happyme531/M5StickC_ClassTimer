@@ -17,6 +17,10 @@ using namespace std;
 
 extern ESP32_IRrecv ir;
 
+extern TFT_eSprite dispBuf;
+
+extern uint32_t screenOnTime;
+
 enum keyEvent_t { NONE, PRESS, RELEASE }; //按键动作
 
 enum keyIndex_t { KEY_MAIN, KEY_SUB, KEY_POWER };
