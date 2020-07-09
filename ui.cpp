@@ -95,14 +95,18 @@ void UIClass::refresh() {
 
     float vbat = M5.Axp.GetBatVoltage();
     int16_t current = M5.Axp.GetBatCurrent();
+    stringstream ss;
+    ss.precision(2);
+    ss.setf(ios::fixed);
     if (current > 0) {  //放电状态
       textOutGB(str_battery, 0, 65, 1, GREEN);
-      textOut((":" + String(vbat) + "V," + String(current) + "mA").c_str(), -1,
-              -1, -1, GREEN);
+      //现在才知道可以在Arduino里使用iostream库，之前用加号连接字符串真是太蠢了
+      ss << ":" << vbat << "V," << current << "mA";
+      textOut(ss.str(), -1, -1, -1, GREEN);
     } else {
       textOutGB(str_battery, 0, 65, 1, RED);
-      textOut((":" + String(vbat) + "V," + String(current) + "mA").c_str(), -1,
-              -1, -1, RED);
+      ss << ":" << vbat << "V," << current << "mA";
+      textOut(ss.str(), -1, -1, -1, RED);
     };
 
   } else if (page == 1) {  //第二页:大字显示时间
@@ -175,7 +179,7 @@ void UIClass::refresh() {
     if (pageNeedInit) {
       enableMic();
       micFFTInit();
-      setCpuFrequencyMhz(320);
+      setCpuFrequencyMhz(240);
       this->refreshInterval = 8;
       this->allowLightSleep = 0;
       pageNeedInit = 0;
@@ -207,15 +211,17 @@ void UIClass::refresh() {
     };
     M5.Lcd.fillScreen(TFT_BLACK);
     uint16_t adcVal = analogRead(36);
-    textOut(("ADC:" + String(adcVal) + "->" + String((float)(3.3 * adcVal / 4096)) + "V").c_str(),3, 0, -1);
-
+    stringstream ss;
+    ss << "ADC:" << adcVal << "->" << (float)(3.3 * adcVal / 4096) << "V";
+    textOut(ss.str(), 3, 0, -1);
+    ss.str("");
     if (initSucceed) {
       textOut("HTU21D init OK", 0, 20, 1, GREEN);
-      String tempStr;
-      tempStr = "Temp:" + String(htu21d.readTemperature());
-      textOut(tempStr.c_str(), 0, 40, 1, WHITE);
-      tempStr = "Humi:" + String(htu21d.readHumidity());
-      textOut(tempStr.c_str(), 0, 60, 1, WHITE);
+      ss << "Temp:" << htu21d.readTemperature();
+      textOut(ss.str(), 0, 40, 1, WHITE);
+      ss.str("");
+      ss << "Humi:" << htu21d.readHumidity();
+      textOut(ss.str(), 0, 60, 1, WHITE);
 
     } else {
       textOut("HTU21D init ERROR", 20, 0, 1, GREEN);

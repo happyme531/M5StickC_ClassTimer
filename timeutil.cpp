@@ -1,9 +1,6 @@
 #include "timeutil.h"
-
 #include <WiFi.h>
-
 #include <ctime>
-
 #include "hardware.h"
 
 const char* wifiSSID_ = "bu~zhun~ceng~wang(2.4G)";

@@ -1,6 +1,14 @@
 #ifndef UI_H
 #define UI_H
 #include <cinttypes>
+//Arduino提供的String和Stream库太弱鸡了，STL YES!
+#include <string>
+#include <iostream>
+#include <sstream>
+//暂时还不支持optional
+//#include <optional>
+
+
 class UIClass {
 
 public:

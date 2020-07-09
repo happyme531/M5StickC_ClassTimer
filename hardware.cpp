@@ -1,5 +1,5 @@
 #include "hardware.h"
-
+#include <codecvt> //如果在这里报错，你可能需要在platform.txt中将-std=gnu++11改为-std=gnu++17
 ESP32_IRrecv ir;
 TFT_eSprite dispBuf = TFT_eSprite(&M5.Lcd);
 
@@ -8,10 +8,16 @@ void initHardWare() {
   digitalWrite(10,HIGH);
   delay(50);
   digitalWrite(10,LOW);//红色led
-  Wire.begin(32, 33);  //避免选择的开发板不是M5stickC而造成的io引脚冲突
-  M5.begin(true, false, true);  //初始化屏幕和串口，跳过电源管理
-  M5.Axp.begin();  //初始化电源管理(先初始化屏幕以避免花屏)
-  M5.Axp.SetChargeCurrent(CURRENT_190MA);
+
+  uint8_t resetReason = rtc_get_reset_reason(0);
+  if (resetReason == 5) {
+    ESP_LOGI("init", "ESP32 reseted from deep sleep");
+  } else {
+    Wire.begin(32, 33);  //避免选择的开发板不是M5stickC而造成的io引脚冲突
+    M5.begin(true, false, true);  //初始化屏幕和串口，跳过电源管理
+    M5.Axp.begin();  //初始化电源管理(先初始化屏幕以避免花屏)
+    M5.Axp.SetChargeCurrent(CURRENT_190MA);
+  };
   M5.Lcd.setSwapBytes(false);
   dispBuf.createSprite(160, 80);
   dispBuf.setSwapBytes(true);
@@ -120,8 +126,7 @@ float getIMUTemp() {
   return temp;
 };
 
-void textOut(string str, int16_t x, int16_t y, int8_t size_, uint32_t color,
-             uint32_t bgColor) {
+void textOut(string str, int16_t x, int16_t y, int8_t size_, uint32_t color, uint32_t bgColor) {
   M5.Lcd.setTextColor(color, bgColor);
   if (size_ != -1) M5.Lcd.setTextSize(size_);
   if (x != -1 && y != -1) M5.Lcd.setCursor(x, y, 2);  //默认第二个字体

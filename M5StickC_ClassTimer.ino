@@ -22,10 +22,6 @@ uint8_t curScreenBrightness = 11;
 
 void setup() {
   initHardWare();
-  uint8_t resetReason = rtc_get_reset_reason(0);
-  if (resetReason == 5) {
-    ESP_LOGI("init", "ESP32 reseted from deep sleep");
-  }
   //校准时间
   textOut("Hold the main key to calibrate time..", 0, 0, 1, RED);
   delay(500);
@@ -81,6 +77,7 @@ void loop() {
   if (lastRefresh + ui.refreshInterval <= millis()) {
     lastRefresh = millis();
     ui.refresh();
+    ESP_LOGD("main","Last refresh cost %dms",(millis()-lastRefresh));
   };
 
   if (pwrKeyStatus.keyPressed) {
@@ -110,7 +107,6 @@ void loop() {
   if (getTotalAcceleration() > 16) {
     screenOnTime = millis();
   };
-
 
   ESP_LOGI("main","int pin: %d",digitalRead(35));
 
