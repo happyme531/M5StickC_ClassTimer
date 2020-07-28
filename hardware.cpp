@@ -1,12 +1,15 @@
 #include "hardware.h"
 #include "sconv/sconv.hpp"
+
+
 ESP32_IRrecv ir;
+
 TFT_eSprite dispBuf = TFT_eSprite(&M5.Lcd);
+
+
 
 void initHardWare() {
   pinMode(10,OUTPUT);
-  digitalWrite(10,HIGH);
-  delay(50);
   digitalWrite(10,LOW);//红色led
 
   uint8_t resetReason = rtc_get_reset_reason(0);
@@ -18,7 +21,7 @@ void initHardWare() {
     M5.Axp.begin();  //初始化电源管理(先初始化屏幕以避免花屏)
     M5.Axp.SetChargeCurrent(CURRENT_190MA);
   };
-  M5.Lcd.setSwapBytes(false);
+  M5.Lcd.setSwapBytes(true);
   dispBuf.createSprite(160, 80);
   dispBuf.setSwapBytes(true);
   pinMode(37, INPUT);
@@ -127,31 +130,65 @@ float getIMUTemp() {
 };
 
 void textOut(string str, int16_t x, int16_t y, int8_t size_, uint32_t color, uint32_t bgColor) {
-  M5.Lcd.setTextColor(color, bgColor);
-  if (size_ != -1) M5.Lcd.setTextSize(size_);
-  if (x != -1 && y != -1) M5.Lcd.setCursor(x, y, 2);  //默认第二个字体
-  M5.Lcd.print(str.c_str());  //这个函数居然只能用const char*
+  dispBuf.setTextColor(color, bgColor);
+  if (size_ != -1) dispBuf.setTextSize(size_);
+  if (x != -1 && y != -1) dispBuf.setCursor(x, y, 2);  //默认第二个字体
+  dispBuf.print(str.c_str());  //这个函数居然只能用const char*
 };
 
+queue<GBTextOnScreen*> GBTextQueue;
+
+//因为不能向缓存里直接写入中文字符数据，因此先存在队列中，再用 textOutGB_Commit()输出
 void textOutGB(const char *str, int16_t x, int16_t y, int8_t size_, uint32_t color,
-               uint32_t bgColor) {  //这个函数用来输出中文
-  M5.Lcd.setTextColor(color, bgColor);
-  if (size_ != -1) M5.Lcd.setTextSize(size_);
-  if (x != -1 && y != -1) M5.Lcd.setCursor(x, y, 2);
-  M5.Lcd.writeHzk(const_cast<char*>(str));
-}
+               uint32_t bgColor) {
+  
+  GBTextQueue.push(new GBTextOnScreen{
+      .str = str,
+      .x = x == -1 ? dispBuf.getCursorX() : x,
+      .y = y == -1 ? dispBuf.getCursorY() : y,
+      .size_ = size_ == -1 ? dispBuf.textsize : size_,
+      .color = color,
+      .bgColor = bgColor});
+  //处理光标问题
+  if (size_ != -1) dispBuf.setTextSize(size_);
+  if (x != -1 && y != -1) dispBuf.setCursor(x, y, 2);
+  if(str == NULL) return;
+  char* tmp = const_cast<char*>(str);
+  while(*tmp != '\0'){
+    while(*tmp <= 0xA0){
+      if(*tmp == '\0') return;
+      dispBuf.setCursor(dispBuf.getCursorX()+8*dispBuf.textsize,dispBuf.getCursorY());
+      tmp++;  
+    }
+    dispBuf.setCursor(dispBuf.getCursorX()+16*dispBuf.textsize,dispBuf.getCursorY());
+    tmp+=2;
+  };
+
+};
+void textOutGB_Commit(){
+  
+  while (!GBTextQueue.empty()){
+    GBTextOnScreen* &tmp = GBTextQueue.front();
+    M5.Lcd.setTextColor(tmp->color, tmp->bgColor);
+    M5.Lcd.setTextSize(tmp->size_);
+    M5.Lcd.setCursor(tmp->x, tmp->y, 2);
+    M5.Lcd.writeHzk(const_cast<char*>(tmp->str));
+    GBTextQueue.pop();
+    delete tmp;
+  };
+};
 
 void rect(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint32_t color) {
-  M5.Lcd.fillRect(x1, y1, x2 - x1, y2 - y1, color);
+  dispBuf.fillRect(x1, y1, x2 - x1, y2 - y1, color);
 };
 
 void textOutAligned(string str, uint8_t x, uint8_t y, uint8_t size_,
                     uint32_t color, uint8_t alignment) {
-  M5.Lcd.setTextDatum(alignment);
-  M5.Lcd.setTextColor(color);
-  M5.Lcd.setTextSize(size_);
-  M5.Lcd.drawString(str.c_str(), x, y, 2);
-  M5.Lcd.setTextDatum(TL_DATUM);
+  dispBuf.setTextDatum(alignment);
+  dispBuf.setTextColor(color);
+  dispBuf.setTextSize(size_);
+  dispBuf.drawString(str.c_str(), x, y, 2);
+  dispBuf.setTextDatum(TL_DATUM);
 };
 
 struct tm RTCGetTime() {

@@ -116,7 +116,7 @@ void loop() {
     screenOnTime = millis();
   };
 
-  ESP_LOGI("main","int pin: %d",digitalRead(35));
+  ESP_LOGV("main","int pin: %d",digitalRead(35));
 
   if (ui.allowLightSleep) {
     if(esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO) delay(ui.refreshInterval);

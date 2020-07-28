@@ -4,7 +4,7 @@
 #include "ESP32_IR_Remote.h"
 #include <M5StickC.h>
 #include <WiFi.h>
-#include <inttypes.h>
+#include <cinttypes>
 #include <string>
 #include <time.h>
 #include <Wire.h>
@@ -13,6 +13,8 @@
 #include <RTC.h>
 #include <driver/rtc_io.h>
 #include "SparkFunHTU21D.h"
+#include <queue>
+
 using namespace std;
 
 extern ESP32_IRrecv ir;
@@ -20,6 +22,17 @@ extern ESP32_IRrecv ir;
 extern TFT_eSprite dispBuf;
 
 extern uint32_t screenOnTime;
+
+struct GBTextOnScreen{
+  const char *str;
+  int16_t x;
+  int16_t y;
+  int8_t size_;
+  uint32_t color;
+  uint32_t bgColor;
+};
+
+extern queue<GBTextOnScreen*> GBTextQueue;
 
 enum keyEvent_t { NONE, PRESS, RELEASE }; //按键动作
 
@@ -58,6 +71,7 @@ float getPMUTemp();
  */
 void textOut(string str, int16_t x=-1, int16_t y=-1, int8_t size_=-1, uint32_t color=0xffffff,uint32_t bgColor=0x00000);
 void textOutGB(const char* str, int16_t x=-1, int16_t y=-1, int8_t size_=-1, uint32_t color=0xffffff,uint32_t bgColor=0x00000);
+void textOutGB_Commit();
 /*
   对齐方式:
   TL_DATUM = Top left

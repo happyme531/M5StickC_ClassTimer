@@ -28,7 +28,8 @@ void UIClass::refresh() {
       this->refreshInterval = 500;
       pageNeedInit = 0;
     };
-    M5.Lcd.fillScreen(BLACK);
+    //dispBuf.fillScreen()只会绘制左半屏，bug?
+    dispBuf.fillRect(0,0,dispBuf.width(),dispBuf.height(),TFT_BLACK);
     string tempStr;
 
     struct tm time;
@@ -108,13 +109,16 @@ void UIClass::refresh() {
       ss << ":" << vbat << "V," << current << "mA";
       textOut(ss.str(), -1, -1, -1, RED);
     };
+    dispBuf.pushSprite(0,0);//同步显示
+    textOutGB_Commit();
 
   } else if (page == 1) {  //第二页:大字显示时间
     if (pageNeedInit) {
       this->refreshInterval = 500;
       pageNeedInit = 0;
     };
-    M5.Lcd.fillScreen(BLACK);
+    dispBuf.fillRect(0,0,dispBuf.width(),dispBuf.height(),TFT_BLACK);;
+    dispBuf.fillRect(0,0,dispBuf.width(),dispBuf.height(),TFT_BLACK);;
     string tempStr;
     struct tm time;
     time = RTCGetTime();
@@ -131,21 +135,23 @@ void UIClass::refresh() {
     } else {
       textOut("------", 0, 40, 2, GREEN);
     };
-    // M5.Lcd.fillScreen(M5.Lcd.color565(0, 0, 255));
+    dispBuf.pushSprite(0,0);
+    // dispBuf.fillScreen(dispBuf.color565(0, 0, 255));
   } else if (page == 2) {  //第三页:农历与额外日期信息
     if (pageNeedInit) {
       this->refreshInterval = 1000;
       pageNeedInit = 0;
     };
+
     struct tm time;
     time = RTCGetTime();
     int daysInMonth=0;
     RTC_DateTypeDef lunarDate = getLunarDate(time,&daysInMonth);
-    M5.Lcd.setCursor(0,0);
-    M5.Lcd.setTextSize(1);
-    M5.Lcd.setTextColor(WHITE);
-    M5.Lcd.fillScreen(BLACK);
-    M5.Lcd.printf("lc: %d/%d/%d (%d)",lunarDate.Year,lunarDate.Month,lunarDate.Date,daysInMonth);
+    dispBuf.setCursor(0,0);
+    dispBuf.setTextSize(1);
+    dispBuf.setTextColor(WHITE);
+    dispBuf.fillRect(0,0,dispBuf.width(),dispBuf.height(),TFT_BLACK);;
+    dispBuf.printf("lc: %d/%d/%d (%d)",lunarDate.Year,lunarDate.Month,lunarDate.Date,daysInMonth);
     textOut("ref: ",0,15,1);
     textOutGB(str_tianGans[yearTianGan(time.tm_year+1900)]);
     textOutGB(str_diZhis[yearDiZhi(time.tm_year+1900)]);
@@ -153,6 +159,8 @@ void UIClass::refresh() {
     textOutGB(str_diZhis[monthDiZhi(time.tm_mon+1)]);
     textOutGB(str_tianGans[dayTianGan(time.tm_year+1900,time.tm_mon+1,time.tm_mday)]);
     textOutGB(str_diZhis[dayDiZhi(time.tm_year+1900,time.tm_mon+1,time.tm_mday)]);
+    dispBuf.pushSprite(0,0);
+    textOutGB_Commit();
 
 
   } else if (page == 3) {  //第四页:遥控器功能
@@ -160,8 +168,9 @@ void UIClass::refresh() {
       this->refreshInterval = 500;
       pageNeedInit = 0;
     };
-    M5.Lcd.fillScreen(BLACK);
+    dispBuf.fillRect(0,0,dispBuf.width(),dispBuf.height(),TFT_BLACK);;
     textOutAligned((string) "Canteen TV Controller", 80, 0, 1, WHITE, TC_DATUM);
+    dispBuf.pushSprite(0,0);
     if (mainKeyStatus.keyPressed) {
       ir.ESP32_IRsendPIN(9, 0);
       ir.initSend();
@@ -171,7 +180,7 @@ void UIClass::refresh() {
       ir.stopIR();
       // digitalWrite(9,HIGH);
       textOut((string) "IR sent", 2, 15, 1, BLUE);
-
+      dispBuf.pushSprite(0,0);
       delay(1000);
     };
 
@@ -189,6 +198,7 @@ void UIClass::refresh() {
       delay(10);
     };
     screenOnTime = millis();
+
   } else if (page == 5) {  //第六页:传感器数据
     if (pageNeedInit) {
       micFFTDeinit();
@@ -209,7 +219,7 @@ void UIClass::refresh() {
 
       pageNeedInit = 0;
     };
-    M5.Lcd.fillScreen(TFT_BLACK);
+    dispBuf.fillRect(0,0,dispBuf.width(),dispBuf.height(),TFT_BLACK);;
     uint16_t adcVal = analogRead(36);
     stringstream ss;
     ss << "ADC:" << adcVal << "->" << (float)(3.3 * adcVal / 4096) << "V";
@@ -226,6 +236,7 @@ void UIClass::refresh() {
     } else {
       textOut("HTU21D init ERROR", 20, 0, 1, GREEN);
     };
+    dispBuf.pushSprite(0,0);
 
   } else if (page == 6) {  //第七页:老虎机小游戏
 
@@ -239,8 +250,9 @@ void UIClass::refresh() {
     const int symbolIndices[] = {2, 4, 5, 0, 3, 4, 1, 5, 3};
     if (pageNeedInit) {
       this->refreshInterval = 20;
+      dispBuf.fillRect(0,0,dispBuf.width(),dispBuf.height(),TFT_BLACK);
       M5.Lcd.fillScreen(TFT_BLACK);
-      M5.Lcd.setSwapBytes(true);
+      dispBuf.setSwapBytes(true);
       Slot::initShadow();
       Slot::setReel(symbolIndices, getArrayLength(symbolIndices));
       for (int i = 0; i < 3; i++) {
@@ -307,11 +319,13 @@ void UIClass::refresh() {
         slots[i].draw();
       }
     }
+    
   } else if (page == 7) {
     if (pageNeedInit) {
-      M5.Lcd.fillScreen(BLACK);
+      dispBuf.fillRect(0,0,dispBuf.width(),dispBuf.height(),TFT_BLACK);
       textOutAligned("Wifi camera receiver", 80, 0, 1, WHITE, TC_DATUM);
       textOut("Press main key to start", 0, 20, 0, WHITE);
+      dispBuf.pushSprite(0,0);
       this->refreshInterval = 500;
       this->allowLightSleep = 0;
       if (mainKeyStatus.keyPressed) {
@@ -323,8 +337,9 @@ void UIClass::refresh() {
 
     while (WiFi.status() != WL_CONNECTED) {
       WiFi.begin("ESP32 Camera", "");
-      M5.Lcd.fillScreen(BLACK);
+      dispBuf.fillRect(0,0,dispBuf.width(),dispBuf.height(),TFT_BLACK);;
       textOut("Connecting...", 0, 0, 0, WHITE);
+      dispBuf.pushSprite(0,0);
       ESP_LOGI("cam", "Wifi connecting..");
       frameCount = 0;
       lastTime = millis();
@@ -341,8 +356,8 @@ void UIClass::refresh() {
       frameCount = 0;
       lastTime = millis();
     };
-    M5.Lcd.setCursor(0, 0);
-    M5.Lcd.printf("FPS:%d", fps);
+    dispBuf.setCursor(0, 0);
+    dispBuf.printf("FPS:%d", fps);
     //显示电池状态
     float vbat = M5.Axp.GetBatVoltage();
     int16_t current = M5.Axp.GetBatCurrent();
@@ -355,6 +370,7 @@ void UIClass::refresh() {
       textOut((":" + String(vbat) + "V," + String(current) + "mA").c_str(), -1,
               -1, -1, RED);
     };
+    dispBuf.pushSprite(0,0);
   };
   return;
 };

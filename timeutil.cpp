@@ -165,7 +165,7 @@ struct tm getNTPTime() {
     Serial.println("NTP:WiFi is off. Enabling...");
     WiFi.begin(wifiSSID_, wifiPassword_);
   };
-  M5.Lcd.fillScreen(BLACK);
+  dispBuf.fillRect(0,0,dispBuf.width(),dispBuf.height(),TFT_BLACK);;
   textOut((string) "Wifi on", 0, 0, 1, 0xffffff);
   delay(1300);
   keyStatus_t exitKey;
@@ -181,9 +181,10 @@ struct tm getNTPTime() {
   
   do{
     retryCount++;
-    M5.Lcd.fillScreen(BLACK);
-    M5.Lcd.setCursor(0,0);
-    M5.Lcd.printf("Retry count:%d",retryCount);
+    dispBuf.fillRect(0,0,dispBuf.width(),dispBuf.height(),TFT_BLACK);;
+    dispBuf.setCursor(0,0);
+    dispBuf.printf("Retry count:%d",retryCount);
+    dispBuf.pushSprite(0,0);
     configTime(8 * 60 * 60, 0, "ntp.ntsc.ac.cn","ntp.aliyun.com");
     
   } while (!getLocalTime(&time)||retryCount>16);
