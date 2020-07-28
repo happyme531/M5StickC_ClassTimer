@@ -20,6 +20,7 @@ uint32_t lastRefresh = 0;
 uint32_t powerOffCountDown = 0;  //自动关机倒计时,单位ms,0表示禁用
 uint8_t curScreenBrightness = 11;
 
+
 void setup() {
   initHardWare();
   //校准时间
@@ -54,6 +55,13 @@ void setup() {
     memcpy(classEventType,classEventType_7,sizeof(classEventType_7));
     classCount=getArrayLength(classTime_7);  
   };
+  /* 
+  attachInterrupt(
+      digitalPinToInterrupt(KEY_SUB_PIN), [] {
+        subKeyStatus.keyPressed = 1;
+      },
+      FALLING);
+ */
   screenOnTime = millis();
   ui.setPage(0);
 };
@@ -72,6 +80,7 @@ void loop() {
     } else {
       ui.setPage(0);
     };
+    ui.refresh();
   };
 
   if (lastRefresh + ui.refreshInterval <= millis()) {
@@ -82,7 +91,6 @@ void loop() {
 
   if (pwrKeyStatus.keyPressed) {
      powerOff();
-    //deepSleep();
   };
 
   if (mainKeyStatus.keyPressed == 1 || M5.Axp.GetVinVoltage() > 4.0) {  //按下主按钮或正在充电
@@ -111,7 +119,10 @@ void loop() {
   ESP_LOGI("main","int pin: %d",digitalRead(35));
 
   if (ui.allowLightSleep) {
+    if(esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO) delay(ui.refreshInterval);
     esp_sleep_enable_timer_wakeup(ui.refreshInterval * 1000);
+    gpio_wakeup_enable((gpio_num_t) KEY_SUB_PIN,GPIO_INTR_LOW_LEVEL);
+    esp_sleep_enable_gpio_wakeup();
     esp_light_sleep_start();  //刷新屏幕之后进入睡眠模式（确实能省不少电）
   } else {
     delay(ui.refreshInterval);

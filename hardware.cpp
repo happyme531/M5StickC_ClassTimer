@@ -1,5 +1,5 @@
 #include "hardware.h"
-#include <codecvt> //如果在这里报错，你可能需要在platform.txt中将-std=gnu++11改为-std=gnu++17
+#include "sconv/sconv.hpp"
 ESP32_IRrecv ir;
 TFT_eSprite dispBuf = TFT_eSprite(&M5.Lcd);
 
@@ -212,6 +212,7 @@ float getTotalAcceleration() {
   return sqrt((float)(accX * accX + accY * accY + accZ * accZ));
 };
 
+
 void getKey(keyIndex_t keyIndex, keyStatus_t *keyStatus) {
   keyStatus->keyPressedPrev = keyStatus->keyPressed;
   switch (keyIndex) {
@@ -226,6 +227,7 @@ void getKey(keyIndex_t keyIndex, keyStatus_t *keyStatus) {
           M5.Axp.GetBtnPress() == 1 ? true : false;  //暂时忽略 长按返回2
       break;
   };
+  
   if (!keyStatus->keyPressedPrev && keyStatus->keyPressed)
     keyStatus->keyPressms = millis();
   if (keyStatus->keyPressedPrev && !keyStatus->keyPressed)

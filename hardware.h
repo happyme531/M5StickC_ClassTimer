@@ -25,6 +25,9 @@ enum keyEvent_t { NONE, PRESS, RELEASE }; //按键动作
 
 enum keyIndex_t { KEY_MAIN, KEY_SUB, KEY_POWER };
 
+static constexpr uint8_t KEY_MAIN_PIN = 37;
+static constexpr uint8_t KEY_SUB_PIN = 39;
+
 typedef struct keyStatus {
   //按键开始被按下的时间
   uint32_t keyPressms; 

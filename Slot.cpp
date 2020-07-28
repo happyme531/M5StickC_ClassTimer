@@ -3,7 +3,7 @@
 //
 
 #include "Slot.h"
-#include "slot_symbols.h"
+#include "slot/slot_symbols.h"
 
 #ifndef _countof
 #define _countof(a) (sizeof(a) / sizeof(a[0]))
