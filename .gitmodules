@@ -1,0 +1,3 @@
+[submodule "sconv"]
+	path = sconv
+	url = https://github.com/breezechen/sconv.git
