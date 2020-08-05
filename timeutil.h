@@ -125,7 +125,8 @@ static const int monthTotal[13] = {0,31,59,90,120,151,181,212,243,273,304,334,36
 
 //公历转换为农历
 RTC_DateTypeDef getLunarDate(struct tm time,int *daysPerMonth = 0);
-//计算年月日对应的天干地支
+
+//计算年月日对应的天干地支，输入公历时间
 uint8_t yearTianGan(uint16_t year);
 uint8_t yearDiZhi(uint16_t year);
 uint8_t monthTianGan(uint8_t year,uint8_t month);
@@ -133,7 +134,13 @@ uint8_t monthDiZhi(uint8_t month);
 uint8_t dayTianGan(uint16_t y,uint8_t m,uint8_t d);
 uint8_t dayDiZhi(uint16_t y,uint8_t m,uint8_t d);
 
+//十方
+enum direction10_t {SOUTH,SOUTHWEST,WEST,NORTHWEST,NORTH,NORTHEAST,EAST,SOUTHEAST,UP,DOWN};
 
+//计算生气的方向
+//来源:https://v.youku.com/v_show/id_XMjc3MTU1MTUwNA==.html?spm=a2hbt.13141534.1_2.d_1_27&f=52157989 
+//41:30
+direction10_t dm_GetLiveDirection(RTC_DateTypeDef lunarDate,uint8_t monthDiZhi);
 
 
 /*

@@ -3,10 +3,10 @@
 #include <ctime>
 #include "hardware.h"
 
-const char* wifiSSID_ = "bu~zhun~ceng~wang(2.4G)";
-const char* wifiPassword_ = "zlq13834653953";
 
-
+//计算农历年月日
+//@param time:当前公历时间
+//@param daysPerMonth*:输出农历一个月长度
 RTC_DateTypeDef getLunarDate(struct tm time, int *daysPerMonth) {
   RTC_DateTypeDef lunarDate;
   lunarDate.Year = time.tm_year + 1900 + 2697;  //黄帝纪年:2020年->4717年
@@ -98,8 +98,8 @@ RTC_DateTypeDef getLunarDate(struct tm time, int *daysPerMonth) {
 };
 
 //将类似{4,1,2,3}的关系转换为{1,2,3,4}
-// i:索引
-// total:数组总长
+//@param i:索引
+//@param total:数组总长
 uint8_t cyclem1(uint8_t i, uint8_t total) {
   if (i == 0) {
     return total - 1;
@@ -107,6 +107,7 @@ uint8_t cyclem1(uint8_t i, uint8_t total) {
     return i - 1;
   }
 }
+
 uint8_t yearTianGan(uint16_t year) {
   int i;
   i = year - 3;
@@ -116,13 +117,15 @@ uint8_t yearDiZhi(uint16_t year) {
   int i;
   i = year - 3;
   return cyclem1(i % 12, 12);
-}
+};
+
 uint8_t monthTianGan(uint8_t year, uint8_t month) {
   int i;
   i = (((year - 3)%10) % 5) * 2 + 1 + month - 2;
   i = i % 10;
   return cyclem1(i, 10);
-}
+};
+
 uint8_t monthDiZhi(uint8_t month) {
   if (month + 1 >= 11) {
     return cyclem1(month - 11, 12);
@@ -157,16 +160,20 @@ uint8_t dayDiZhi(uint16_t y, uint8_t m, uint8_t d) {
   if (j > 7) j = j % 12;
 
   return cyclem1(j, 12);
-}
+};
+
+direction10_t dm_GetLiveDirection(RTC_DateTypeDef lunarDate,uint8_t monthDiZhi){
+  //TODO
+};
 
 struct tm getNTPTime() {
   if (WiFi.getMode() == WIFI_OFF) {
-    //不要用ESP_LOGx,貌似是坏掉的
-    Serial.println("NTP:WiFi is off. Enabling...");
-    WiFi.begin(wifiSSID_, wifiPassword_);
+    ESP_LOGI("NTP","NTP:WiFi is off. Enabling...");
+    WiFi.begin();
   };
-  dispBuf.fillRect(0,0,dispBuf.width(),dispBuf.height(),TFT_BLACK);;
+  dispBuf.fillRect(0,0,dispBuf.width(),dispBuf.height(),TFT_BLACK);
   textOut((string) "Wifi on", 0, 0, 1, 0xffffff);
+  dispBuf.pushSprite(0,0);
   delay(1300);
   keyStatus_t exitKey;
   exitKey.keyPressed = false;

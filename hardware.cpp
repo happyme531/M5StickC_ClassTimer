@@ -1,7 +1,7 @@
 #include "hardware.h"
 #include "sconv/sconv.hpp"
-
-
+#include <ArduinoOTA.h>
+#include <sstream>
 ESP32_IRrecv ir;
 
 TFT_eSprite dispBuf = TFT_eSprite(&M5.Lcd);
@@ -70,7 +70,7 @@ void initHardWare() {
   for (int i = 0; i < 4; i++) {
     ReData <<= 8;
     ReData |= Wire1.read();
-  }
+  };
   ESP_LOGI("init", "AXP192 IRQ state:%x", ReData);
   Wire1.beginTransmission(0x34);
   Wire1.write(0x31);
@@ -84,9 +84,11 @@ void initHardWare() {
   Wire1.write(0xff);
   Wire1.write(0x47);
   Wire1.write(0xff);
-  Wire1.endTransmission();
+  Wire1.endTransmission(true);
+  
   rtc_gpio_deinit(GPIO_NUM_35);
-
+  pinMode(GPIO_NUM_35, INPUT);
+  ESP_LOGI("init","Interrupt state:%d",digitalRead(35));
   setCpuFrequencyMhz(80);
   ESP_LOGI("init", "CPU freq is now %d.", ESP.getCpuFreqMHz());
   digitalWrite(10,HIGH);
@@ -141,7 +143,10 @@ queue<GBTextOnScreen*> GBTextQueue;
 //因为不能向缓存里直接写入中文字符数据，因此先存在队列中，再用 textOutGB_Commit()输出
 void textOutGB(const char *str, int16_t x, int16_t y, int8_t size_, uint32_t color,
                uint32_t bgColor) {
-  
+  if(GBTextQueue.size()>150){
+    ESP_LOGW("hardware","Too many queued GB char!");
+    return;
+  }
   GBTextQueue.push(new GBTextOnScreen{
       .str = str,
       .x = x == -1 ? dispBuf.getCursorX() : x,
@@ -166,7 +171,6 @@ void textOutGB(const char *str, int16_t x, int16_t y, int8_t size_, uint32_t col
 
 };
 void textOutGB_Commit(){
-  
   while (!GBTextQueue.empty()){
     GBTextOnScreen* &tmp = GBTextQueue.front();
     M5.Lcd.setTextColor(tmp->color, tmp->bgColor);
@@ -249,7 +253,74 @@ float getTotalAcceleration() {
   return sqrt((float)(accX * accX + accY * accY + accZ * accZ));
 };
 
+bool doArduinoOTA(){
+  if (WiFi.getMode() == WIFI_OFF){
+    ESP_LOGI("OTA", "OTA:WiFi is off. Enabling...");
+  };
+  //不论如何打开WiFi
+  WiFi.begin();
+  dispBuf.fillRect(0, 0, dispBuf.width(), dispBuf.height(), TFT_BLACK);
+  textOut("Connecting to WiFi..", 0, 0, 1, 0xffffff);
+  dispBuf.pushSprite(0,0);
+  while (WiFi.status() != WL_CONNECTED){
+    getKey(KEY_MAIN, &mainKeyStatus);
+    if (mainKeyStatus.keyPressed && !mainKeyStatus.keyPressedPrev){
+      textOut("OTA canceled",0,15);
+      ESP_LOGI("OTA","OTA canceled");
+      dispBuf.pushSprite(0,0);
+      WiFi.disconnect(true);
+      delay(1000);
+      return 0;
+    };
+    delay(200);
+  };
+  //wifi已连接
+  bool haveError = false;
+  ArduinoOTA.setHostname(((String)("M5StickC-Classtimer-"+ WiFi.macAddress())).c_str());
+  ArduinoOTA.onStart([]{
+    textOut("OTA Start",0,31);
+    ESP_LOGI("OTA","OTA start");
+    dispBuf.pushSprite(0,0);
+  });
+  ArduinoOTA.onProgress([](size_t progress, size_t total){
+    dispBuf.fillRect(0,47,dispBuf.width(),63,TFT_BLACK);
+    stringstream ss;
+    ss.precision(2);
+    ss.setf(ios::fixed);
+    ss << "Progress:" << ((float)progress/total)*100 << "%";
+    textOut(ss.str(),0,31);
+    dispBuf.pushSprite(0,0);
+  });
 
+  ArduinoOTA.onError([&haveError](error_t error){
+    if (error == OTA_AUTH_ERROR) ESP_LOGE("OTA","OTA: Auth Failed");
+    else if (error == OTA_BEGIN_ERROR) ESP_LOGE("OTA","OTA: Begin Failed");
+    else if (error == OTA_CONNECT_ERROR) ESP_LOGE("OTA","OTA: Connect Failed");
+    else if (error == OTA_RECEIVE_ERROR) ESP_LOGE("OTA","OTA: Receive Failed");
+    else if (error == OTA_END_ERROR) ESP_LOGE("OTA","OTA: End Failed");
+    textOut(("Error "+String(error)).c_str(),0,63);
+    dispBuf.pushSprite(0,0);
+    haveError = 1;
+  });
+  ArduinoOTA.onEnd([]{
+    textOut("OTA end,rebooting..",0,47);
+    dispBuf.pushSprite(0,0);
+    ESP_LOGI("OTA","OTA end,rebooting..");
+    delay(1000);
+  });
+  ArduinoOTA.begin();
+  textOut("WiFi ok,waiting for OTA", 0, 15);
+  dispBuf.pushSprite(0,0);
+  while (!haveError){
+    //
+    ArduinoOTA.handle();
+  };
+  //函数不可能返回1,因为在更新成功后会重启
+  return 0;
+};
+bool doWebOTA(){
+  return 0;
+};
 void getKey(keyIndex_t keyIndex, keyStatus_t *keyStatus) {
   keyStatus->keyPressedPrev = keyStatus->keyPressed;
   switch (keyIndex) {

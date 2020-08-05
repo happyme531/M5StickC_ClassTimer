@@ -5,6 +5,7 @@
 #include "noisedetection.h"
 #include "timeutil.h"
 #include "ui.h"
+
 UIClass ui;
 
 uint32_t classTime[50]; 
@@ -23,19 +24,6 @@ uint8_t curScreenBrightness = 11;
 
 void setup() {
   initHardWare();
-  //校准时间
-  textOut("Hold the main key to calibrate time..", 0, 0, 1, RED);
-  delay(500);
-  getKey(KEY_MAIN, &mainKeyStatus);
-  if (mainKeyStatus.keyPressed) {
-    struct tm time = getNTPTime();
-    if (time.tm_hour != 0) {  //没有网络时调用获得的这个值是0
-      ESP_LOGI("main", "NTP succeed");
-      RTCSetTime(time);
-    } else {
-      ESP_LOGW("main", "NTP failed");
-    }
-  };
   struct tm time = RTCGetTime();
   char buf[30];
   strftime(buf, sizeof(buf), "%Y/%m/%d %H:%M:%S", &time); 
@@ -119,7 +107,11 @@ void loop() {
   ESP_LOGV("main","int pin: %d",digitalRead(35));
 
   if (ui.allowLightSleep) {
-    if(esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO) delay(ui.refreshInterval);
+    if(esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO){
+     while (digitalRead(KEY_SUB_PIN)==0){
+      delay(50);
+     };
+    };
     esp_sleep_enable_timer_wakeup(ui.refreshInterval * 1000);
     gpio_wakeup_enable((gpio_num_t) KEY_SUB_PIN,GPIO_INTR_LOW_LEVEL);
     esp_sleep_enable_gpio_wakeup();

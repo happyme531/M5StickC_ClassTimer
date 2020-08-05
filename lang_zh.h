@@ -23,7 +23,12 @@ const static char *str_now = (char*)"当前",
      *str_PE=(char*)"体育", 
      *str_selfStudy=(char*)"自习", 
      *str_unknown=(char*)"未知",
-     *str_nextClass=(char*)"下一节课";
+     *str_nextClass=(char*)"下一节课",
+     *str_espTouch=(char*)"ESPTouch配网",
+     *str_timeCalibrate=(char*)"联网对时",
+     *str_arduinoOTA=(char*)"OTA更新(Arduino)",
+     *str_webOTA_Station=(char*)"OTA更新(web,wifi客户端)",
+     *str_webOTA_AP=(char*)"OTA更新(web,wifi热点)";
 
 const static char* str_tianGans[10]={"甲","乙","丙","丁","戊","己","庚","辛","壬","癸"};
 const static char* str_diZhis[12]={"子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"}; 

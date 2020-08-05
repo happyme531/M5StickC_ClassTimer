@@ -97,6 +97,9 @@ void getKey(keyIndex_t keyIndex, keyStatus_t *keyStatus);
 
 float getTotalAcceleration();
 
+bool doArduinoOTA();
+bool doWebOTA(); 
+
 template <class T> uint8_t getArrayLength(T &array) {
   return (sizeof(array) / sizeof(array[0]));
 };

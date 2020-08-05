@@ -8,7 +8,6 @@
 #include "microphone_fft.h"
 #include "noisedetection.h"
 #include "timeutil.h"
-
 using namespace std;
 
 HTU21D htu21d;
@@ -19,6 +18,7 @@ WiFiClient client;
 uint32_t lastTime;
 uint16_t frameCount = 0;
 uint8_t fps;
+uint8_t menuSelection=0;
 void UIClass::refresh() {
   if (page == 0) {
     /*
@@ -69,7 +69,7 @@ void UIClass::refresh() {
     };
 
     if (time.tm_min < 1) {  //距离下一个下课事件1分钟内时允许进行校准
-      textOut("Ready to calibrate", 0, 30, 1, WHITE);
+      textOut("Ready to calibrate", 0, 45, 1, WHITE);
       if (mainKeyStatus.keyPressed == 1) {
         struct tm timeNow = RTCGetTime();
         //查找下一个事件对应的时间设为系统时间
@@ -371,6 +371,107 @@ void UIClass::refresh() {
               -1, -1, RED);
     };
     dispBuf.pushSprite(0,0);
+  }else if (page==8){ //网络相关配置
+    if (pageNeedInit) {
+      pageNeedInit=0;
+      refreshInterval=300;
+    };
+    //绘制菜单
+    if(menuSelection==0){
+      textOutGB(str_espTouch,0,0,1,BLACK,YELLOW);
+    }else{
+      textOutGB(str_espTouch,0,0,1,YELLOW,BLACK);
+    };
+    if(menuSelection==1){
+      textOutGB(str_timeCalibrate,0,15,1,BLACK,YELLOW);
+    }else{
+      textOutGB(str_timeCalibrate,0,15,1,YELLOW,BLACK);
+    };
+    if(menuSelection==2){
+      textOutGB(str_arduinoOTA,0,31,1,BLACK,YELLOW);
+    }else{
+      textOutGB(str_arduinoOTA,0,31,1,YELLOW,BLACK);
+    };
+    if(menuSelection==3){
+      textOutGB(str_webOTA_Station,0,47,1,BLACK,YELLOW);
+    }else{
+      textOutGB(str_webOTA_Station,0,47,1,YELLOW,BLACK);
+    };
+    if(menuSelection==4){
+      textOutGB(str_webOTA_AP,0,63,1,BLACK,YELLOW);
+    }else{
+      textOutGB(str_webOTA_AP,0,63,1,YELLOW,BLACK);
+    };
+    dispBuf.fillRect(0,0,dispBuf.width(),dispBuf.height(),TFT_BLACK);
+    dispBuf.pushSprite(0,0);
+    textOutGB_Commit();
+    //处理按键
+    //短按
+
+    if (mainKeyStatus.keyPressed && !mainKeyStatus.keyPressedPrev && millis()-mainKeyStatus.keyPressms<=2000){
+      if(menuSelection < 4){
+        menuSelection++;
+      }else{
+        menuSelection=0;
+      };
+    };
+
+    //长按,开始处理
+    if(mainKeyStatus.keyPressed && millis()-mainKeyStatus.keyPressms>2000){
+      menuSelection--; //权宜之计
+      if(menuSelection==0){ //smartconfig
+        dispBuf.fillRect(0,0,dispBuf.width(),dispBuf.height(),TFT_BLACK);
+        textOut("SmartConfig start..",0,0);
+        ESP_LOGI("ui","SmartConfig start..");
+        dispBuf.pushSprite(0,0);
+        WiFi.beginSmartConfig();
+        textOut("Waiting for SmartConfig",0,15);
+        ESP_LOGI("ui","Waiting for SmartConfig");
+        dispBuf.pushSprite(0,0);
+        while (!WiFi.smartConfigDone()){
+          delay(200);
+          getKey(KEY_MAIN , &mainKeyStatus);
+          if(mainKeyStatus.keyPressed && !mainKeyStatus.keyPressedPrev){
+            textOut("SmartConfig canceled",0,31);
+            ESP_LOGI("ui","SmartConfig canceled");
+            dispBuf.pushSprite(0,0);
+            WiFi.stopSmartConfig();
+            delay(1000);
+            return;
+          };
+        };
+        textOut("Connecting to wifi",0,31);
+        ESP_LOGI("ui","Smartconfig:Connecting to wifi");
+        dispBuf.pushSprite(0,0);
+        while (WiFi.status() != WL_CONNECTED){
+          delay(200);
+          getKey(KEY_MAIN , &mainKeyStatus);
+          if(mainKeyStatus.keyPressed && !mainKeyStatus.keyPressedPrev){
+            textOut("SmartConfig canceled",0,47);
+            ESP_LOGI("ui","SmartConfig canceled");
+            dispBuf.pushSprite(0,0);
+            WiFi.disconnect(true,true);
+            delay(1000);
+            return;
+          };
+        };
+        textOut("Connect succeed",0,31);
+        ESP_LOGI("ui","Smartconfig:onnect succeed");
+        dispBuf.pushSprite(0,0);
+        WiFi.disconnect(true); //关闭wifi,此时已经储存了信息
+        delay(1000);
+      }else if(menuSelection==1){ //ntp对时
+        struct tm time = getNTPTime();
+        if (time.tm_hour != 0) {  //没有网络时调用获得的这个值是0
+          ESP_LOGI("main", "NTP succeed");
+          RTCSetTime(time);
+        } else {
+          ESP_LOGW("main", "NTP failed");
+        };
+      }else if(menuSelection == 2){ //ArduinoOTA
+      doArduinoOTA();
+      };
+    };
   };
   return;
 };
