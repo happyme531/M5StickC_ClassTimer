@@ -139,8 +139,8 @@ enum direction10_t {SOUTH,SOUTHWEST,WEST,NORTHWEST,NORTH,NORTHEAST,EAST,SOUTHEAS
 
 //计算生气的方向
 //来源:https://v.youku.com/v_show/id_XMjc3MTU1MTUwNA==.html?spm=a2hbt.13141534.1_2.d_1_27&f=52157989 
-//41:30
-direction10_t dm_GetLiveDirection(RTC_DateTypeDef lunarDate,uint8_t monthDiZhi);
+//43:30
+direction10_t dm_GetLiveDirection(RTC_DateTypeDef lunarDate,uint8_t lunarMonth);
 
 
 /*

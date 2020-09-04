@@ -168,7 +168,15 @@ void textOutGB(const char *str, int16_t x, int16_t y, int8_t size_, uint32_t col
     dispBuf.setCursor(dispBuf.getCursorX()+16*dispBuf.textsize,dispBuf.getCursorY());
     tmp+=2;
   };
-
+};
+void textOutU8(wstring str, int16_t x, int16_t y, int8_t size_, uint32_t color, uint32_t bgColor) {
+  using namespace sconv;
+  const wchar_t* ustr = str.c_str();
+  uint8_t size = sconv_unicode_to_gbk((const wchar*)ustr, -1, NULL, 0);
+  char *ansi_str = new char[size + 1];
+  size = sconv_unicode_to_gbk((const wchar*)ustr, -1, ansi_str, size);
+  ansi_str[size] = 0;
+  textOutGB(ansi_str, x, y, size_, color, bgColor);
 };
 void textOutGB_Commit(){
   while (!GBTextQueue.empty()){

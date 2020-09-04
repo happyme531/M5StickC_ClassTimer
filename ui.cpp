@@ -93,7 +93,7 @@ void UIClass::refresh() {
         RTCSetTime(timeNow);
       };
     }; 
-
+    //textOutU8(L"你好中国!",0,45,1,RED);
     float vbat = M5.Axp.GetBatVoltage();
     int16_t current = M5.Axp.GetBatCurrent();
     stringstream ss;

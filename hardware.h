@@ -71,6 +71,7 @@ float getPMUTemp();
  */
 void textOut(string str, int16_t x=-1, int16_t y=-1, int8_t size_=-1, uint32_t color=0xffffff,uint32_t bgColor=0x00000);
 void textOutGB(const char* str, int16_t x=-1, int16_t y=-1, int8_t size_=-1, uint32_t color=0xffffff,uint32_t bgColor=0x00000);
+void textOutU8(wstring str,  int16_t x=-1, int16_t y=-1, int8_t size_=-1, uint32_t color=0xffffff,uint32_t bgColor=0x00000);
 void textOutGB_Commit();
 /*
   对齐方式:

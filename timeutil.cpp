@@ -162,8 +162,20 @@ uint8_t dayDiZhi(uint16_t y, uint8_t m, uint8_t d) {
   return cyclem1(j, 12);
 };
 
-direction10_t dm_GetLiveDirection(RTC_DateTypeDef lunarDate,uint8_t monthDiZhi){
-  //TODO
+direction10_t dm_GetLiveDirection(uint8_t hour,uint8_t lunarMonth){
+  constexpr int8_t monthOffSet=1; //十一月->子,十二月->丑...
+  constexpr direction10_t tianGan2Direction[12] = {SOUTH,SOUTHWEST,SOUTHWEST,WEST,NORTHWEST,NORTHWEST,NORTH,NORTHEAST,NORTHEAST,EAST,SOUTHEAST,SOUTHEAST};
+  auto addOffSet_12=[monthOffSet](uint8_t month,uint8_t offset){
+    if(month+monthOffSet>=12){
+      return month+monthOffSet-12;
+    }else{
+      return month+monthOffSet;
+    };
+  };
+  lunarMonth = addOffSet_12(lunarMonth,monthOffSet);
+  uint8_t timeOffSet = lunarMonth + 2;
+  uint8_t timeDiZhi = hour/2 + 1;
+  return tianGan2Direction[addOffSet_12(timeDiZhi,timeOffSet)];
 };
 
 struct tm getNTPTime() {
